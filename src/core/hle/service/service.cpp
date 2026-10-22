@@ -23,6 +23,7 @@
 #include "core/hle/service/cam/y2r_u.h"
 #include "core/hle/service/cecd/cecd.h"
 #include "core/hle/service/cfg/cfg.h"
+#include "core/hle/service/coop/coop_u.h"
 #include "core/hle/service/csnd/csnd_snd.h"
 #include "core/hle/service/dlp/dlp.h"
 #include "core/hle/service/dsp/dsp_dsp.h"
@@ -229,6 +230,7 @@ static bool AttemptLLE(const ServiceModuleInfo& service_module, u64 loading_titl
 /// Initialize ServiceManager
 void Init(Core::System& core, u64 loading_titleid, std::vector<u64>& lle_modules, bool allow_lle) {
     SM::ServiceManager::InstallInterfaces(core);
+    COOP::InstallInterfaces(core);
     core.Kernel().SetAppMainThreadExtendedSleep(false);
     bool lle_module_present = false;
 

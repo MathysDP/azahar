@@ -269,6 +269,8 @@ add_library(citra_core STATIC EXCLUDE_FROM_ALL
     hle/service/cecd/cecd_u.h
     hle/service/cfg/cfg.cpp
     hle/service/cfg/cfg.h
+    hle/service/coop/coop_u.cpp
+    hle/service/coop/coop_u.h
     hle/service/cfg/cfg_defaults.cpp
     hle/service/cfg/cfg_defaults.h
     hle/service/cfg/cfg_i.cpp

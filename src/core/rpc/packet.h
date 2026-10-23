@@ -21,6 +21,7 @@ enum class PacketType : u32 {
     TakeScreenshot = 5,
     ReadScreenshot = 6,
     GetPerfStats = 7,
+    SetTestInput = 0x100, ///< Co-op fork: arg1 buttons, arg2 circle pad x | y << 16
 };
 
 struct PacketHeader {

@@ -10,6 +10,7 @@
 #include <lodepng.h>
 #include "common/logging/log.h"
 #include "common/settings.h"
+#include "core/coop/test_input.h"
 #include "core/core.h"
 #include "core/frontend/framebuffer_layout.h"
 #include "core/hle/kernel/process.h"
@@ -310,6 +311,7 @@ bool RPCServer::ValidatePacket(const PacketHeader& packet_header) {
         case PacketType::TakeScreenshot:
         case PacketType::ReadScreenshot:
         case PacketType::GetPerfStats:
+        case PacketType::SetTestInput:
             if (packet_header.packet_size >= (sizeof(u32) * 2)) {
                 return true;
             }
@@ -378,6 +380,12 @@ void RPCServer::DispatchRequest(std::unique_ptr<Packet> request_packet) {
         HandleGetPerfStats(*request_packet, (PerfStatsMode)arg1);
         success = true;
         break;
+    case PacketType::SetTestInput:
+        Coop::TestInput::Set({arg1, static_cast<s16>(arg2 & 0xFFFF), static_cast<s16>(arg2 >> 16)});
+        std::memcpy(request_packet->GetPacketData().data(), &arg1, sizeof(arg1));
+        request_packet->SetPacketDataSize(sizeof(arg1));
+        request_packet->SendReply();
+        return;
     default:
         break;
     }

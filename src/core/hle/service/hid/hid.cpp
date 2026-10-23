@@ -11,6 +11,7 @@
 #include "common/archives.h"
 #include "common/logging/log.h"
 #include "core/3ds.h"
+#include "core/coop/test_input.h"
 #include "core/core.h"
 #include "core/hle/ipc_helpers.h"
 #include "core/hle/kernel/event.h"
@@ -220,6 +221,11 @@ void Module::UpdatePadCallback(std::uintptr_t user_data, s64 cycles_late) {
         // Get current circle pad position and update circle pad direction
         float circle_pad_x_f, circle_pad_y_f;
         std::tie(circle_pad_x_f, circle_pad_y_f) = circle_pad->GetStatus();
+        if (const auto test = Coop::TestInput::Get()) {
+            state.hex |= test->buttons;
+            circle_pad_x_f = test->circle_x / static_cast<float>(0x9A);
+            circle_pad_y_f = test->circle_y / static_cast<float>(0x9A);
+        }
 
         // xperia64: 0x9A seems to be the calibrated limit of the circle pad
         // Verified by using Input Redirector with very large-value digital inputs

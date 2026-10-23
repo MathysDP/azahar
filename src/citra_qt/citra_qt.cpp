@@ -76,6 +76,8 @@
 #include "citra_qt/movie/movie_play_dialog.h"
 #include "citra_qt/movie/movie_record_dialog.h"
 #include "citra_qt/multiplayer/state.h"
+#include "core/hle/service/cfg/cfg.h"
+#include "network/network.h"
 #include "citra_qt/qt_image_interface.h"
 #include "citra_qt/qt_swizzle.h"
 #include "citra_qt/uisettings.h"
@@ -270,6 +272,7 @@ GMainWindow::GMainWindow(Core::System& system_)
 
     QStringList args = QApplication::arguments();
     QString game_path;
+    QString multiplayer_arg; // nickname[:password]@address[:port]
     std::optional<bool> fullscreen_override;
     for (int i = 1; i < args.size(); ++i) {
         // Preserves drag/drop functionality
@@ -368,11 +371,8 @@ GMainWindow::GMainWindow(Core::System& system_)
         }
 
         if (args[i] == QStringLiteral("--multiplayer") || args[i] == QStringLiteral("-m")) {
-            std::cout << "Warning: The --multiplayer option is not yet implemented for the Qt "
-                         "frontend; Ignoring."
-                      << std::endl;
             if (i < args.size() - 1 && !args[i + 1].startsWith(QChar::fromLatin1('-'))) {
-                i++;
+                multiplayer_arg = args[++i];
             }
             continue;
         }
@@ -543,6 +543,33 @@ GMainWindow::GMainWindow(Core::System& system_)
 #ifdef ENABLE_VULKAN
     physical_devices = GetVulkanPhysicalDevices();
 #endif
+
+    // Co-op fork: join a room from the command line, nickname[:password]@address[:port].
+    if (!multiplayer_arg.isEmpty()) {
+        const QString user = multiplayer_arg.section(QChar::fromLatin1('@'), 0, 0);
+        const QString host = multiplayer_arg.section(QChar::fromLatin1('@'), 1);
+        const QString nickname = user.section(QChar::fromLatin1(':'), 0, 0);
+        const QString password = user.section(QChar::fromLatin1(':'), 1);
+        const QString address = host.section(QChar::fromLatin1(':'), 0, 0);
+        const QString port_text = host.section(QChar::fromLatin1(':'), 1);
+        const u16 port = port_text.isEmpty() ? Network::DefaultRoomPort : port_text.toUShort();
+        if (nickname.isEmpty() || address.isEmpty() || port == 0) {
+            std::cout << "Invalid --multiplayer value, expected nickname[:password]@address[:port]"
+                      << std::endl;
+        } else if (auto member = Network::GetRoomMember().lock()) {
+            LOG_INFO(Frontend, "Joining room {}:{} as {}", address.toStdString(), port,
+                     nickname.toStdString());
+            member->BindOnStateChanged([](const Network::RoomMember::State& state) {
+                LOG_INFO(Frontend, "Room member state {}", static_cast<int>(state));
+            });
+            member->BindOnError([](const Network::RoomMember::Error& error) {
+                LOG_ERROR(Frontend, "Room member error {}", static_cast<int>(error));
+            });
+            member->Join(nickname.toStdString(), Service::CFG::GetConsoleIdHash(system),
+                         address.toStdString().c_str(), port, 0,
+                         Service::CFG::GetConsoleMacAddress(system), password.toStdString());
+        }
+    }
 
     if (!game_path.isEmpty()) {
         BootGame(game_path);

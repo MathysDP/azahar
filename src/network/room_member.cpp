@@ -45,6 +45,9 @@ public:
     std::mutex network_mutex; ///< Mutex that controls access to the `client` variable.
     /// Thread that receives and dispatches network packets
     std::unique_ptr<std::thread> loop_thread;
+    std::mutex coop_handler_mutex;
+    CoopDataHandler coop_handler; ///< Co-op fork: receives IdCoopData payloads.
+
     std::mutex send_list_mutex;  ///< Mutex that controls access to the `send_list` variable.
     std::list<Packet> send_list; ///< A list that stores all packets to send the async
 
@@ -170,6 +173,19 @@ void RoomMember::RoomMemberImpl::MemberLoop() {
                 case IdChatMessage:
                     HandleChatPacket(&event);
                     break;
+                case IdCoopData: {
+                    Packet packet;
+                    packet.Append(event.packet->data, event.packet->dataLength);
+                    packet.IgnoreBytes(sizeof(u8)); // Ignore the message type
+                    std::string nickname;
+                    std::vector<u8> data;
+                    packet >> nickname >> data;
+                    std::lock_guard handler_lock(coop_handler_mutex);
+                    if (coop_handler) {
+                        coop_handler(nickname, data);
+                    }
+                    break;
+                }
                 case IdStatusMessage:
                     HandleStatusMessagePacket(&event);
                     break;
@@ -602,6 +618,18 @@ void RoomMember::SendChatMessage(const std::string& message) {
     packet << static_cast<u8>(IdChatMessage);
     packet << message;
     room_member_impl->Send(std::move(packet));
+}
+
+void RoomMember::SendCoopData(const std::vector<u8>& data) {
+    Packet packet;
+    packet << static_cast<u8>(IdCoopData);
+    packet << data;
+    room_member_impl->Send(std::move(packet));
+}
+
+void RoomMember::SetCoopDataHandler(CoopDataHandler handler) {
+    std::lock_guard lock(room_member_impl->coop_handler_mutex);
+    room_member_impl->coop_handler = std::move(handler);
 }
 
 void RoomMember::SendGameInfo(const GameInfo& game_info) {

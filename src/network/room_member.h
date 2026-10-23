@@ -178,6 +178,15 @@ public:
      */
     void SendChatMessage(const std::string& message);
 
+    /// Co-op fork: payload handler, called on the network thread with the sender's nickname.
+    using CoopDataHandler = std::function<void(const std::string&, const std::vector<u8>&)>;
+
+    /// Co-op fork: sends an opaque payload (at most MaxCoopDataSize bytes) to the other members.
+    void SendCoopData(const std::vector<u8>& data);
+
+    /// Co-op fork: sets the single payload handler, or clears it with an empty function.
+    void SetCoopDataHandler(CoopDataHandler handler);
+
     /**
      * Sends the current game info to the room.
      * @param game_info The game information.

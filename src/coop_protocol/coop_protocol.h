@@ -14,15 +14,40 @@ namespace CoopProtocol {
 
 /// Bumped on every incompatible change. The plugin refuses to run when the
 /// service reports a different version.
-constexpr std::uint32_t Version = 1;
+constexpr std::uint32_t Version = 2;
 
 /// Name the plugin passes to srvGetServiceHandle.
 constexpr char ServiceName[] = "coop:u";
+
+/// Largest payload of Send and Receive, carried inline as 32-bit words.
+constexpr std::uint32_t MaxPayloadWords = 16;
+constexpr std::uint32_t MaxPayloadSize = MaxPayloadWords * 4;
 
 /// IPC command IDs of coop:u.
 enum class Command : std::uint16_t {
     /// In: u32 nonce. Out: result, u32 Version, u32 nonce + 1.
     Ping = 0x0001,
+    /// In: u32 size, MaxPayloadWords words. Out: result, u32 sent (0 when not in a room).
+    /// The payload goes to every other member of the room.
+    Send = 0x0002,
+    /// In: nothing. Out: result, u32 size (0 when nothing is queued), MaxPayloadWords words.
+    /// Returns the oldest payload received from another member.
+    Receive = 0x0003,
 };
+
+/// First byte of every payload sent with Command::Send.
+enum class MessageType : std::uint8_t {
+    PlayerPosition = 1,
+};
+
+/// The sender's player position in world units (one tile is 18 units).
+struct PlayerPositionMessage {
+    MessageType type = MessageType::PlayerPosition;
+    std::uint8_t padding[3] = {};
+    float x = 0;
+    float y = 0;
+    float z = 0;
+};
+static_assert(sizeof(PlayerPositionMessage) <= MaxPayloadSize);
 
 } // namespace CoopProtocol

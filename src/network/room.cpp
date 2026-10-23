@@ -233,6 +233,9 @@ public:
      */
     void HandleChatPacket(const ENetEvent* event);
 
+    /// Co-op fork: relays an IdCoopData payload to the other members, tagged with the sender.
+    void HandleCoopDataPacket(const ENetEvent* event);
+
     /**
      * Extracts the game name from a received ENet packet and broadcasts it.
      * @param event The ENet event that was received.
@@ -265,6 +268,9 @@ void Room::RoomImpl::ServerLoop() {
                     break;
                 case IdChatMessage:
                     HandleChatPacket(&event);
+                    break;
+                case IdCoopData:
+                    HandleCoopDataPacket(&event);
                     break;
                 // Moderation
                 case IdModKick:
@@ -893,6 +899,44 @@ void Room::RoomImpl::HandleWifiPacket(const ENetEvent* event) {
                       destination_address[3], destination_address[4], destination_address[5]);
             enet_packet_destroy(enet_packet);
         }
+    }
+    enet_host_flush(server);
+}
+
+void Room::RoomImpl::HandleCoopDataPacket(const ENetEvent* event) {
+    Packet in_packet;
+    in_packet.Append(event->packet->data, event->packet->dataLength);
+    in_packet.IgnoreBytes(sizeof(u8)); // Ignore the message type
+    std::vector<u8> data;
+    in_packet >> data;
+    if (data.size() > MaxCoopDataSize) {
+        return;
+    }
+
+    std::lock_guard lock(member_mutex);
+    const auto sending_member = std::find_if(
+        members.begin(), members.end(),
+        [event](const Member& member) { return member.peer == event->peer; });
+    if (sending_member == members.end()) {
+        return; // Unknown sender
+    }
+
+    Packet out_packet;
+    out_packet << static_cast<u8>(IdCoopData);
+    out_packet << sending_member->nickname;
+    out_packet << data;
+
+    ENetPacket* enet_packet = enet_packet_create(out_packet.GetData(), out_packet.GetDataSize(),
+                                                 ENET_PACKET_FLAG_RELIABLE);
+    bool sent_packet = false;
+    for (const auto& member : members) {
+        if (member.peer != event->peer) {
+            sent_packet = true;
+            enet_peer_send(member.peer, 0, enet_packet);
+        }
+    }
+    if (!sent_packet) {
+        enet_packet_destroy(enet_packet);
     }
     enet_host_flush(server);
 }

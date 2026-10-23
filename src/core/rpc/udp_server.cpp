@@ -2,6 +2,7 @@
 // Licensed under GPLv3 or any later version
 // Refer to the LICENSE.txt file included.
 
+#include <cstdlib>
 #include <thread>
 #include <boost/asio.hpp>
 #include "common/common_types.h"
@@ -11,12 +12,21 @@
 
 namespace Core::RPC {
 
+namespace {
+/// Co-op fork: AZAHAR_RPC_PORT overrides the port, so several instances can run on one PC.
+u16 Port() {
+    const char* value = std::getenv("AZAHAR_RPC_PORT");
+    const int port = value ? std::atoi(value) : 0;
+    return port > 0 && port < 65536 ? static_cast<u16>(port) : 45987;
+}
+} // namespace
+
 class UDPServer::Impl {
 public:
     explicit Impl(std::function<void(std::unique_ptr<Packet>)> new_request_callback)
         // Use a random high port
         // TODO: Make configurable or increment port number on failure
-        : socket(io_context, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 45987)),
+        : socket(io_context, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), Port())),
           new_request_callback(std::move(new_request_callback)) {
 
         EnsureBufferSize<boost::asio::socket_base::send_buffer_size>(MAX_PACKET_SIZE * 2);

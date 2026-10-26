@@ -80,7 +80,9 @@ void RPCServer::HandleWriteMemory(Packet& packet, u32 address, std::span<const u
     if ((address >= Memory::PROCESS_IMAGE_VADDR && address <= Memory::PROCESS_IMAGE_VADDR_END) ||
         (address >= Memory::HEAP_VADDR && address <= Memory::HEAP_VADDR_END) ||
         (address >= Memory::LINEAR_HEAP_VADDR && address <= Memory::LINEAR_HEAP_VADDR_END) ||
-        (address >= Memory::N3DS_EXTRA_RAM_VADDR && address <= Memory::N3DS_EXTRA_RAM_VADDR_END)) {
+        (address >= Memory::N3DS_EXTRA_RAM_VADDR && address <= Memory::N3DS_EXTRA_RAM_VADDR_END) ||
+        // Co-op fork: 3GX plugin memory, so test scripts can drive the plugin's globals.
+        (address >= 0x07000000 && address < 0x08000000)) {
         // Note: Unless built with ENABLE_SCRIPTING_SYNC, memory writes occurs asynchronously from
         // the state of the emulator, which is not safe for some regions.
         if (selected_pid == 0xFFFFFFFF) {

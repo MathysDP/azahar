@@ -14,7 +14,7 @@ namespace CoopProtocol {
 
 /// Bumped on every incompatible change. The plugin refuses to run when the
 /// service reports a different version.
-constexpr std::uint32_t Version = 5;
+constexpr std::uint32_t Version = 6;
 
 /// Name the plugin passes to srvGetServiceHandle.
 constexpr char ServiceName[] = "coop:u";
@@ -67,13 +67,17 @@ struct BattleActionMessage {
 };
 static_assert(sizeof(BattleActionMessage) <= MaxPayloadSize);
 
-/// Battle state at the start of a turn, to detect the two games drifting apart.
+/// Battle state at the start of a turn: the host's random state keeps both games rolling the
+/// same numbers, the HP detect the two games drifting apart anyway.
 /// HP by battle position as the sender sees it: 0 the sender, 2 its partner, 1 and 3 foes.
 struct TurnStateMessage {
     MessageType type = MessageType::TurnState;
-    std::uint8_t padding[3] = {};
+    std::uint8_t host = 0; ///< 1 when the sender decides the foes; `random` is then the reference
+    std::uint8_t padding[2] = {};
     std::uint32_t turn = 0; ///< 1 for the first turn of the battle
     std::uint16_t hp[4] = {};
+    /// State of the battle's random generator (TinyMT32) when the turn's menu opened.
+    std::uint32_t random[4] = {};
 };
 static_assert(sizeof(TurnStateMessage) <= MaxPayloadSize);
 

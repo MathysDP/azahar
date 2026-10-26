@@ -14,7 +14,7 @@ namespace CoopProtocol {
 
 /// Bumped on every incompatible change. The plugin refuses to run when the
 /// service reports a different version.
-constexpr std::uint32_t Version = 3;
+constexpr std::uint32_t Version = 4;
 
 /// Name the plugin passes to srvGetServiceHandle.
 constexpr char ServiceName[] = "coop:u";
@@ -54,9 +54,10 @@ static_assert(sizeof(PlayerPositionMessage) <= MaxPayloadSize);
 /// The sender's choice for its Pokémon, which the receiver's game plays as the battle ally.
 struct AllyActionMessage {
     MessageType type = MessageType::AllyAction;
-    std::uint8_t move_slot = 0; ///< 0..3, index in the Pokémon's move list
-    std::uint8_t target = 0;    ///< battle position targeted, as the game's AI encodes it
-    std::uint8_t padding = 0;
+    std::uint8_t padding[3] = {};
+    /// Action the sender's battle client committed, as the game encodes it:
+    /// (move << 8) | (target position << 4) | command, target seen from the sender's side.
+    std::uint32_t action = 0;
     std::uint32_t sequence = 0; ///< increases with each choice, so a repeat is not replayed
 };
 static_assert(sizeof(AllyActionMessage) <= MaxPayloadSize);

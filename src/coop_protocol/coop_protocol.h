@@ -14,7 +14,7 @@ namespace CoopProtocol {
 
 /// Bumped on every incompatible change. The plugin refuses to run when the
 /// service reports a different version.
-constexpr std::uint32_t Version = 6;
+constexpr std::uint32_t Version = 7;
 
 /// Name the plugin passes to srvGetServiceHandle.
 constexpr char ServiceName[] = "coop:u";
@@ -41,12 +41,16 @@ enum class MessageType : std::uint8_t {
     BattleAction = 2,
     TurnState = 3,
     PartyChunk = 4,
+    BattleInvite = 5,
+    InviteReply = 6,
 };
 
 /// The sender's player position in world units (one tile is 18 units).
 struct PlayerPositionMessage {
     MessageType type = MessageType::PlayerPosition;
-    std::uint8_t padding[3] = {};
+    /// 1 when the sender is on the field and not in a co-op battle: it can take an invitation.
+    std::uint8_t available = 0;
+    std::uint8_t padding[2] = {};
     float x = 0;
     float y = 0;
     float z = 0;
@@ -99,5 +103,22 @@ struct PartyChunkMessage {
     std::uint8_t bytes[PartyChunkBytes] = {};
 };
 static_assert(sizeof(PartyChunkMessage) <= MaxPayloadSize);
+
+/// The sender engaged a trainer alone and turned the battle into a co-op one; the receiver is
+/// asked to start the same battle, with the sender as its ally.
+struct BattleInviteMessage {
+    MessageType type = MessageType::BattleInvite;
+    std::uint8_t padding = 0;
+    std::uint16_t trainer = 0; ///< the trainer engaged, doubled as both foes
+};
+static_assert(sizeof(BattleInviteMessage) <= MaxPayloadSize);
+
+/// Answer to a BattleInvite: on a refusal the inviter's ally is played by its AI.
+struct InviteReplyMessage {
+    MessageType type = MessageType::InviteReply;
+    std::uint8_t accepted = 0;
+    std::uint16_t trainer = 0;
+};
+static_assert(sizeof(InviteReplyMessage) <= MaxPayloadSize);
 
 } // namespace CoopProtocol

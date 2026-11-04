@@ -14,7 +14,7 @@ namespace CoopProtocol {
 
 /// Bumped on every incompatible change. The plugin refuses to run when the
 /// service reports a different version.
-constexpr std::uint32_t Version = 7;
+constexpr std::uint32_t Version = 8;
 
 /// Name the plugin passes to srvGetServiceHandle.
 constexpr char ServiceName[] = "coop:u";
@@ -80,8 +80,15 @@ struct TurnStateMessage {
     std::uint8_t padding[2] = {};
     std::uint32_t turn = 0; ///< 1 for the first turn of the battle
     std::uint16_t hp[4] = {};
-    /// State of the battle's random generator (TinyMT32) when the turn's menu opened.
+    /// State of the battle's random generator (TinyMT32) when the turn started.
     std::uint32_t random[4] = {};
+    /// The sender's own battle Pokémon, which is the receiver's ally: only the sender's game
+    /// gives it experience, so a level-up is copied over to keep both battles the same.
+    std::uint16_t species = 0;
+    std::uint16_t level = 0;
+    std::uint16_t max_hp = 0;
+    std::uint16_t current_hp = 0;
+    std::uint16_t stats[5] = {}; ///< attack, defense, special attack, special defense, speed
 };
 static_assert(sizeof(TurnStateMessage) <= MaxPayloadSize);
 

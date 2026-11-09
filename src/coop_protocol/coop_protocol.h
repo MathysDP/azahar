@@ -15,7 +15,7 @@ namespace CoopProtocol {
 
 /// Bumped on every incompatible change. The plugin refuses to run when the
 /// service reports a different version.
-constexpr std::uint32_t Version = 11;
+constexpr std::uint32_t Version = 12;
 
 /// Name the plugin passes to srvGetServiceHandle.
 constexpr char ServiceName[] = "coop:u";
@@ -107,12 +107,13 @@ struct PartyChunkMessage {
 };
 static_assert(sizeof(PartyChunkMessage) <= MaxPayloadSize);
 
-/// The sender engaged a trainer alone and turned the battle into a co-op one; the receiver is
-/// asked to start the same battle, with the sender as its ally.
+/// The sender engaged a trainer, alone or in a duo, and turned the battle into a co-op one; the
+/// receiver is asked to start the same battle, with the sender as its ally.
 struct BattleInviteMessage {
     MessageType type = MessageType::BattleInvite;
     std::uint8_t padding = 0;
-    std::uint16_t trainer = 0; ///< the trainer engaged, doubled as both foes
+    std::uint16_t trainer = 0;        ///< the trainer engaged
+    std::uint16_t second_trainer = 0; ///< its partner for a duo of the original game, else 0: doubled
 };
 static_assert(sizeof(BattleInviteMessage) <= MaxPayloadSize);
 

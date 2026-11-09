@@ -14,7 +14,7 @@ namespace CoopProtocol {
 
 /// Bumped on every incompatible change. The plugin refuses to run when the
 /// service reports a different version.
-constexpr std::uint32_t Version = 9;
+constexpr std::uint32_t Version = 10;
 
 /// Name the plugin passes to srvGetServiceHandle.
 constexpr char ServiceName[] = "coop:u";
@@ -43,6 +43,7 @@ enum class MessageType : std::uint8_t {
     PartyChunk = 4,
     BattleInvite = 5,
     InviteReply = 6,
+    PlayerInfo = 7,
 };
 
 /// The sender's player position in world units (one tile is 18 units).
@@ -120,5 +121,14 @@ struct InviteReplyMessage {
     std::uint16_t trainer = 0;
 };
 static_assert(sizeof(InviteReplyMessage) <= MaxPayloadSize);
+
+/// Who the sender is, so the receiver's game can show the partner as its battle ally.
+constexpr std::uint32_t NameLength = 13; ///< UTF-16 code units, terminator included
+struct PlayerInfoMessage {
+    MessageType type = MessageType::PlayerInfo;
+    std::uint8_t gender = 0; ///< 0 male, 1 female, as the game stores it
+    std::uint16_t name[NameLength] = {};
+};
+static_assert(sizeof(PlayerInfoMessage) <= MaxPayloadSize);
 
 } // namespace CoopProtocol

@@ -15,7 +15,7 @@ namespace CoopProtocol {
 
 /// Bumped on every incompatible change. The plugin refuses to run when the
 /// service reports a different version.
-constexpr std::uint32_t Version = 12;
+constexpr std::uint32_t Version = 13;
 
 /// Name the plugin passes to srvGetServiceHandle.
 constexpr char ServiceName[] = "coop:u";
@@ -56,6 +56,9 @@ struct PlayerPositionMessage {
     float x = 0;
     float y = 0;
     float z = 0;
+    /// Facing, as the game stores it: sine and cosine of the angle, 0 when facing down.
+    float facing_sin = 0;
+    float facing_cos = 1;
 };
 static_assert(sizeof(PlayerPositionMessage) <= MaxPayloadSize);
 static_assert(offsetof(PlayerPositionMessage, x) == 4, "x stays where version 10 had it");

@@ -8,13 +8,14 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 
 namespace CoopProtocol {
 
 /// Bumped on every incompatible change. The plugin refuses to run when the
 /// service reports a different version.
-constexpr std::uint32_t Version = 10;
+constexpr std::uint32_t Version = 11;
 
 /// Name the plugin passes to srvGetServiceHandle.
 constexpr char ServiceName[] = "coop:u";
@@ -51,12 +52,13 @@ struct PlayerPositionMessage {
     MessageType type = MessageType::PlayerPosition;
     /// 1 when the sender is on the field and not in a co-op battle: it can take an invitation.
     std::uint8_t available = 0;
-    std::uint8_t padding[2] = {};
+    std::uint16_t zone = 0; ///< the game's zone number: the partner is drawn only in the same zone
     float x = 0;
     float y = 0;
     float z = 0;
 };
 static_assert(sizeof(PlayerPositionMessage) <= MaxPayloadSize);
+static_assert(offsetof(PlayerPositionMessage, x) == 4, "x stays where version 10 had it");
 
 /// An action a battle client committed in the sender's game: its player's menu choice, or a
 /// foe's choice when the sender decides the foes. The receiver's game plays it for the same

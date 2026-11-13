@@ -15,7 +15,7 @@ namespace CoopProtocol {
 
 /// Bumped on every incompatible change. The plugin refuses to run when the
 /// service reports a different version.
-constexpr std::uint32_t Version = 14;
+constexpr std::uint32_t Version = 15;
 
 /// Name the plugin passes to srvGetServiceHandle.
 constexpr char ServiceName[] = "coop:u";
@@ -137,6 +137,8 @@ struct PlayerInfoMessage {
     /// Seed of the randomizer the game was started with, 0 for the original game. Both players
     /// must have the same, or they do not play the same game.
     std::uint32_t randomizer_seed = 0;
+    /// Experience multiplier: both players need the same, the ally levels up in both games.
+    std::uint8_t exp_multiplier = 1;
 };
 static_assert(sizeof(PlayerInfoMessage) <= MaxPayloadSize);
 
